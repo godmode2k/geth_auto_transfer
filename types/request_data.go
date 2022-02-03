@@ -3,9 +3,9 @@ Project:    Ethereum auto-transfer (accounts to specific address(hotwallet))
 Purpose:
 Author:     Ho-Jung Kim (godmode2k@hotmail.com)
 Date:       Since Dec 4, 2020
-Filename:   types.go
+Filename:   request_data.go
 
-Last modified:  Dec 11, 2020
+Last modified:  Jan 25, 2022
 License:
 
 *
@@ -55,6 +55,12 @@ type RequestData struct {
 }
 
 type RequestData_params_erc20 struct {
+    // [{"to": "<contract address>", "data": ""}, "latest"]
+    To string `json:"to"`
+    Data string `json:"data"`
+}
+
+type RequestData_params_erc1155 struct {
     // [{"to": "<contract address>", "data": ""}, "latest"]
     To string `json:"to"`
     Data string `json:"data"`
