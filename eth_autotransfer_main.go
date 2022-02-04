@@ -2176,6 +2176,8 @@ func get_blocks_all() {
             //tx_token_id := ""
             tx_token_data := ""
             tx_token_data_length := ""
+            tx_token_uri_with_token_id := ""
+            tx_token_uri_with_token_id_hexadecimal := ""
 
             if tx_to == nil {
                 continue
@@ -2465,6 +2467,126 @@ func get_blocks_all() {
                     token_amount_int := new(big.Int)
                     token_amount_int.SetString( tx_token_amount_hex[2:], 16 )
                     tx_token_amount = token_amount_int.String()
+
+                    token_id_int := new(big.Int)
+                    token_id_int.SetString( tx_token_id_hex[2:], 16 )
+                    tx_token_id := token_id_int.String()
+
+                    // get URI
+                    {
+                        var result types.Result
+
+                        //gas := "70000"
+                        //gasprice := "100"
+                        //value := ""
+                        //from := ""
+                        to := tx_to // erc-1155 contract address
+                        holder_address := tx_token_to // has been transferred already
+                        token_id := tx_token_id
+                        //to := "0x1e57f9561600b269a37437f02ce9da31e5b830ce" // erc-1155 contract address
+                        //holder_address := "0xe6e55eed00218faef27eed24def9208f3878b333"
+                        method := "0x0e89341c"
+                        token_id_int := new(big.Int)
+                        token_id_int.SetString( token_id, 10 )
+                        token_id_hex := "0x" + token_id_int.Text( 16 )
+                        data := method + "000000000000000000000000" + holder_address[2:] +
+                                strings.Repeat("0", 64 - len(token_id_hex[2:])) + token_id_hex[2:]
+
+                        var params []interface{}
+                        //request_data_param := types.RequestData_params_erc1155_transaction { From: from, To: to, Value: value, Gas: gas, Gasprice: gasprice, Data: data }
+                        request_data_param := types.RequestData_params_erc1155 { To: to.(string), Data: data }
+                        params = append( params, request_data_param, "latest" )
+                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                        message, _ := json.Marshal( request_data )
+                        //fmt.Println( "message: ", request_data )
+                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                        defer response.Body.Close()
+                        if err != nil {
+                            log.Fatal( "http.Post: ", err )
+                        }
+
+                        //fmt.Println( "response: " )
+                        responseBody, err := ioutil.ReadAll( response.Body )
+                        if err != nil {
+                            log.Fatal( "ioutil.ReadAll: ", err )
+                        }
+
+                        //fmt.Println( string(responseBody) )
+                        err = json.Unmarshal( responseBody, &result )
+                        if err != nil {
+                            log.Fatal( "json.Unmarshal: ", err )
+                        }
+                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+
+
+                        uri_hex_str := result.Result
+
+                        // 2+126+2+6: 2 bytes (0x) + 126 bytes (0000...20...000000) + 2 byte (3d) + 6 bytes (000000)
+                        checks_len := 2 + 126 + 2 + 6
+
+                        //fmt.Println( "checks len: ", checks_len )
+
+                        if len(uri_hex_str) <= checks_len {
+                            log.Fatal( "invalid length: ", len(uri_hex_str) )
+                        }
+
+                        //fmt.Println( "uri hex str: ", uri_hex_str )
+                        //fmt.Println( "url hex str len: ", len(uri_hex_str) )
+
+                        uri_hex := uri_hex_str[2+126+2:len(uri_hex_str) - 6]
+                        //fmt.Println( "URI hex: ", uri_hex )
+
+                        uri_bs, err := hex.DecodeString( uri_hex )
+                        uri_str := string( uri_bs )
+
+                        //fmt.Println( hex.Dump(uri_bs) )
+
+                        if err != nil {
+                            panic(err)
+                        }
+                        //fmt.Println( "erc-1155 URI hex-string to str: ", uri_str )
+
+                        uri_with_token_id := strings.Replace( uri_str, "{id}", token_id, -1 )
+                        //fmt.Println( "erc-1155 URI: ", uri_with_token_id )
+
+
+                        // https://docs.openzeppelin.com/contracts/3.x/erc1155#constructing_an_erc1155_token_contract
+                        // The uri can include the string {id} which clients must replace with the actual token ID,
+                        // in lowercase hexadecimal (with no 0x prefix) and leading zero padded to 64 hex characters.
+
+                        //token_id_bytes := []byte( token_id ) // from str
+                        //token_id_hex = hex.EncodeToString( token_id_bytes )
+                        //
+                        //token_id_hex = hex.EncodeToString( []byte(token_id) ) // from str
+
+                        //token_id_bytes := []byte( strconv.FormatInt(token_id_int, 16) ) // from int
+                        token_id_bytes := []byte( fmt.Sprintf("%x", token_id_int) ) // from int
+                        token_id_hex = hex.EncodeToString( token_id_bytes )
+
+                        //fmt.Println( "token_id str: ", token_id )
+                        //fmt.Println( "token_id hex (from str literally): ", token_id_hex )
+
+                        token_id_bs, err := hex.DecodeString( token_id_hex )
+                        token_id_str := string( token_id_bs )
+                        if err != nil {
+                            panic(err)
+                        }
+                        //fmt.Println( "token_id ASCII: ", token_id_str )
+                        //tx_token_uri_with_token_id = token_id_str
+
+
+                        uri_with_token_id = strings.Repeat("0", 64 - len(token_id_hex)) + token_id_hex // from str literally
+                        //uri_with_token_id = strings.Repeat("0", 64 - len(token_id_str)) + token_id_str // ASCII
+                        uri_with_token_id = strings.Replace( uri_str, "{id}", uri_with_token_id, -1 )
+                        //fmt.Println( "erc-1155 URI: ", uri_with_token_id )
+
+                        // Hexadecimal
+                        tx_token_uri_with_token_id_hexadecimal = uri_with_token_id
+
+                        // ASCII
+                        tx_token_uri_with_token_id = strings.Replace( uri_str, "{id}", token_id_str, -1 )
+                    }
                 }
 
 
@@ -2491,6 +2613,8 @@ func get_blocks_all() {
                     fmt.Println( "token_to =", tx_token_to )
                     fmt.Println( "token_id = ", tx_token_id_hex )
                     fmt.Println( "token_amount = ", tx_token_amount )
+                    fmt.Println( "token_uri (ASCII) = ", tx_token_uri_with_token_id )
+                    fmt.Println( "token_uri (Hexadecimal) = ", tx_token_uri_with_token_id_hexadecimal )
                     fmt.Println( "token_data_length = ", tx_token_data_length )
                     fmt.Println( "token_data = ", tx_token_data )
                     fmt.Println()
