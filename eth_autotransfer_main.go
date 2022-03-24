@@ -5,7 +5,7 @@ Author:     Ho-Jung Kim (godmode2k@hotmail.com)
 Date:       Since Dec 4, 2020
 Filename:   eth_autotransfer_main.go
 
-Last modified:  Feb 2, 2022
+Last modified:  Mar 24, 2022
 License:
 
 *
@@ -77,7 +77,6 @@ var URL = "http://" + SERVER_ADDRESS + ":" + SERVER_PORT
 
 //! Implementation
 // --------------------------------------------------------------------
-
 func eth_get_balance(_address string) {
     // eth: eth_getBalance
     //
@@ -1957,7 +1956,7 @@ func get_blocks_erc1155() {
 
                 //tx_data_offset = 2 + 8 + 24+40 + 24
                 // token to: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
-                tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 40)]
+                tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 64)]
 
                 //tx_data_offset = 2 + 8 + 64 + 64
                 // token id: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64]
@@ -2248,7 +2247,7 @@ func get_blocks_all() {
 
                     //tx_data_offset = 2 + 8 + 24+40 + 24
                     // token to: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
-                    tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 40)]
+                    tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 64)]
 
                     //tx_data_offset = 2 + 8 + 64 + 64
                     // token id: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64]
