@@ -5,7 +5,7 @@ Author:     Ho-Jung Kim (godmode2k@hotmail.com)
 Date:       Since Dec 4, 2020
 Filename:   eth_autotransfer_main.go
 
-Last modified:  Mar 24, 2022
+Last modified:  Mar 26, 2022
 License:
 
 *
@@ -1420,313 +1420,317 @@ func get_blocks() {
 
             //fmt.Println( "data =", result_block.Result )
             //fmt.Println( reflect.TypeOf(result_block.Result) )
-            _txn := result_block.Result.(map[string]interface{})["transactions"]
-            //fmt.Println( "size = ", len(_txn.([]interface{})) )
-            if len(_txn.([]interface{})) <= 0 {
+            _txns := result_block.Result.(map[string]interface{})["transactions"]
+            fmt.Println( "transaction size = ", len(_txns.([]interface{})) )
+            if len(_txns.([]interface{})) <= 0 {
                 //fmt.Println( "no transaction: size = 0" )
                 continue
             }
-            _txn = _txn.([]interface{})[0]
-            txn := _txn.(map[string]interface{})
-            //if txn["from"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" && txn["to"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" {
-            //    continue
-            //}
 
-            timestamp_hex := result_block.Result.(map[string]interface{})["timestamp"]
-            timestamp_int := new(big.Int)
-            timestamp_int.SetString( timestamp_hex.(string)[2:], 16 )
-            timestamp_unixtime := timestamp_int.String()
-            //timestamp_int32, _ := strconv.Atoi( timestamp_unixtime )
-            timestamp_int64, _ := strconv.ParseInt( timestamp_unixtime, 10, 64 )
-            tx_timestamp_date := time.Unix( timestamp_int64, 0 )
-            //tx_timestamp_date_rfc3339 := timestamp_date.Format( time.RFC3339 )
+            for j := 0; j < len(_txns.([]interface{})); j++ {
+                //_txns = _txns.([]interface{})[0]
+                //txn := _txns.(map[string]interface{})
+                _txn := _txns.([]interface{})[j]
+                txn := _txn.(map[string]interface{})
+
+                //if txn["from"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" && txn["to"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" {
+                //    continue
+                //}
+
+                timestamp_hex := result_block.Result.(map[string]interface{})["timestamp"]
+                timestamp_int := new(big.Int)
+                timestamp_int.SetString( timestamp_hex.(string)[2:], 16 )
+                timestamp_unixtime := timestamp_int.String()
+                //timestamp_int32, _ := strconv.Atoi( timestamp_unixtime )
+                timestamp_int64, _ := strconv.ParseInt( timestamp_unixtime, 10, 64 )
+                tx_timestamp_date := time.Unix( timestamp_int64, 0 )
+                //tx_timestamp_date_rfc3339 := timestamp_date.Format( time.RFC3339 )
 
 
-            tx_hash := txn["hash"]
-            tx_block_number_hex := txn["blockNumber"]
-            tx_block_number := ""
-            {
-                block_number_int := new(big.Int)
-                block_number_int.SetString( tx_block_number_hex.(string)[2:], 16 )
-                //fmt.Println( "ether hex-string to int: ", block_number_int )
-                tx_block_number = block_number_int.String()
-            }
-            tx_from := txn["from"]
-            tx_to := txn["to"]
-            tx_value_wei_hex := txn["value"]
-            tx_value_wei := ""
-            tx_value := "" // Ether
-            tx_input := txn["input"]
+                tx_hash := txn["hash"]
+                tx_block_number_hex := txn["blockNumber"]
+                tx_block_number := ""
+                {
+                    block_number_int := new(big.Int)
+                    block_number_int.SetString( tx_block_number_hex.(string)[2:], 16 )
+                    //fmt.Println( "ether hex-string to int: ", block_number_int )
+                    tx_block_number = block_number_int.String()
+                }
+                tx_from := txn["from"]
+                tx_to := txn["to"]
+                tx_value_wei_hex := txn["value"]
+                tx_value_wei := ""
+                tx_value := "" // Ether
+                tx_input := txn["input"]
 
-            tx_token_to := "" // for ERC-20
-            tx_token_name := ""
-            tx_token_symbol := ""
-            tx_token_decimals := ""
-            tx_token_total_supply := ""
-            tx_token_amount_wei_hex := ""
-            tx_token_amount_wei := ""
-            tx_token_amount := ""
+                tx_token_to := "" // for ERC-20
+                tx_token_name := ""
+                tx_token_symbol := ""
+                tx_token_decimals := ""
+                tx_token_total_supply := ""
+                tx_token_amount_wei_hex := ""
+                tx_token_amount_wei := ""
+                tx_token_amount := ""
 
-            if tx_to == nil {
-                continue
-            }
-
-            //fmt.Println( "transaction =", _txn )
-            //fmt.Println( "hash =", tx_hash )
-            //fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-            //fmt.Println( "block_number =", tx_block_number )
-            //fmt.Println( "from =", tx_from )
-
-            if txn["input"] == "0x" {
-                fmt.Println( "Ether" )
-
-                fmt.Println( "hash =", tx_hash )
-                fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-                fmt.Println( "block_number =", tx_block_number )
-                fmt.Println( "from =", tx_from )
-                fmt.Println( "to =", tx_to )
-
-                // SEE:
-                // - https://golang.org/pkg/math/big/
-                // - https://golang.org/pkg/strconv/
-                // - https://goethereumbook.org/account-balance/
-                amount_wei_int := new(big.Int)
-                amount_wei_int.SetString( tx_value_wei_hex.(string)[2:], 16 )
-                fmt.Println( "ether hex-string to int: ", amount_wei_int, "(wei)" )
-                amount_wei_float := new(big.Float)
-                amount_wei_float.SetString( amount_wei_int.String() )
-                tx_value_float := new(big.Float).Quo(amount_wei_float, big.NewFloat(math.Pow10(18)))
-                tx_value = fmt.Sprintf( "%.8f", tx_value_float )
-                tx_value_wei = amount_wei_int.String()
-
-                fmt.Println( "value_wei =", tx_value_wei, "(wei)" )
-                fmt.Println( "value_ether =", tx_value, "(ether)" )
-                fmt.Println()
-            } else {
-                //fmt.Println( "ERC-xxxx" )
-
-                //fmt.Println( "input data =", tx_input )
-
-                // token to: [2: 0x] + [8: method] + [0 x 24]
-                tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
-
-                // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] + [40: to address]
-                tx_token_amount_wei_hex = "0x" + tx_input.(string)[2 + 8 + 24 + 40:]
-
-                method := ""
-                data := ""
-
-                //fmt.Println( "method =", tx_input.(string)[:10] )
-                if tx_input.(string)[:10] != "0xa9059cbb" {
-                    //fmt.Println( "Not ERC-20 transfer transaction" )
+                if tx_to == nil {
                     continue
                 }
 
-                {
-                    _token_name := ""
-                    _token_symbol := ""
-                    _token_decimals := ""
-                    _token_total_supply := ""
+                //fmt.Println( "transaction =", _txn )
+                //fmt.Println( "hash =", tx_hash )
+                //fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                //fmt.Println( "block_number =", tx_block_number )
+                //fmt.Println( "from =", tx_from )
 
-                    {
-                        // Token: name
-                        method = "0x06fdde03"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
+                if txn["input"] == "0x" {
+                    fmt.Println( "Ether" )
 
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_name = result.Result
-                    }
-
-                    {
-                        // Token: symbol
-                        method = "0x95d89b41"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_symbol = result.Result
-                    }
-
-                    {
-                        // Token: decimals
-                        method = "0x313ce567"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_decimals = result.Result
-                    }
-
-                    {
-                        // Token: total_supply 
-                        method = "0x18160ddd"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_total_supply = result.Result
-                    }
-
-
-
-                    //-----{
-                    // token name: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
-                    __token_name, _ := hex.DecodeString( _token_name[2 + 60 + 4 + 60 + 4:] )
-                    tx_token_name = string(bytes.Trim(__token_name, "\x00"))
-
-                    // token symbol: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
-                    __token_symbol, _ := hex.DecodeString( _token_symbol[2 + 60 + 4 + 60 + 4:] )
-                    tx_token_symbol = string(bytes.Trim(__token_symbol, "\x00"))
-
-                    // token decimals: 0x + [60 bytes] + [4 bytes]
-                    token_decimals_int := new(big.Int)
-                    token_decimals_int.SetString( _token_decimals[2:], 16 )
-                    __token_decimals := token_decimals_int.String()
-                    token_decimals_int32, _ := strconv.Atoi( __token_decimals )
-                    tx_token_decimals = __token_decimals
-
-                    // token total supply:
-                    token_total_supply_int := new(big.Int)
-                    token_total_supply_int.SetString( _token_total_supply[2:], 16 )
-                    token_total_supply_float := new(big.Float)
-                    token_total_supply_float.SetString( token_total_supply_int.String() )
-                    __token_total_supply := new(big.Float).Quo(token_total_supply_float, big.NewFloat(math.Pow10(token_decimals_int32)))
-                    tx_token_total_supply = fmt.Sprintf( "%.8f", __token_total_supply )
-
-                    //fmt.Println( "token name:", string(__token_name) )
-                    //fmt.Println( "token_symbol:", string(__token_symbol) )
-                    //fmt.Println( "token_decimals:", __token_decimals )
-                    //fmt.Printf( "token_total_supply: %f\n", __token_total_supply )
-                    //-----}
-
+                    fmt.Println( "hash =", tx_hash )
+                    fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                    fmt.Println( "block_number =", tx_block_number )
+                    fmt.Println( "from =", tx_from )
+                    fmt.Println( "to =", tx_to )
 
                     // SEE:
                     // - https://golang.org/pkg/math/big/
                     // - https://golang.org/pkg/strconv/
                     // - https://goethereumbook.org/account-balance/
-                    token_amount_wei_int := new(big.Int)
-                    token_amount_wei_int.SetString( tx_token_amount_wei_hex[2:], 16 )
-                    //fmt.Println( "erc-20 token amount hex-string to int: ", token_amount_wei_int, "(wei)" )
-                    token_amount_wei_float := new(big.Float)
-                    token_amount_wei_float.SetString( token_amount_wei_int.String() )
-                    token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(18)))
-                    tx_token_amount = fmt.Sprintf( "%.8f", token_amount )
-                    tx_token_amount_wei = token_amount_wei_int.String()
-                    //fmt.Printf( "erc-20 token amount: %s (%s)\n", tx_token_amount, tx_token_symbol )
+                    amount_wei_int := new(big.Int)
+                    amount_wei_int.SetString( tx_value_wei_hex.(string)[2:], 16 )
+                    fmt.Println( "ether hex-string to int: ", amount_wei_int, "(wei)" )
+                    amount_wei_float := new(big.Float)
+                    amount_wei_float.SetString( amount_wei_int.String() )
+                    tx_value_float := new(big.Float).Quo(amount_wei_float, big.NewFloat(math.Pow10(18)))
+                    tx_value = fmt.Sprintf( "%.8f", tx_value_float )
+                    tx_value_wei = amount_wei_int.String()
+
+                    fmt.Println( "value_wei =", tx_value_wei, "(wei)" )
+                    fmt.Println( "value_ether =", tx_value, "(ether)" )
+                    fmt.Println()
+                } else {
+                    //fmt.Println( "ERC-xxxx" )
+
+                    //fmt.Println( "input data =", tx_input )
+
+                    // token to: [2: 0x] + [8: method] + [0 x 24]
+                    tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
+
+                    // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] + [40: to address]
+                    tx_token_amount_wei_hex = "0x" + tx_input.(string)[2 + 8 + 24 + 40:]
+
+                    method := ""
+                    data := ""
+
+                    //fmt.Println( "method =", tx_input.(string)[:10] )
+                    if tx_input.(string)[:10] != "0xa9059cbb" {
+                        //fmt.Println( "Not ERC-20 transfer transaction" )
+                        continue
+                    }
+
+                    {
+                        _token_name := ""
+                        _token_symbol := ""
+                        _token_decimals := ""
+                        _token_total_supply := ""
+
+                        {
+                            // Token: name
+                            method = "0x06fdde03"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_name = result.Result
+                        }
+
+                        {
+                            // Token: symbol
+                            method = "0x95d89b41"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_symbol = result.Result
+                        }
+
+                        {
+                            // Token: decimals
+                            method = "0x313ce567"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_decimals = result.Result
+                        }
+
+                        {
+                            // Token: total_supply 
+                            method = "0x18160ddd"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_total_supply = result.Result
+                        }
+
+
+
+                        //-----{
+                        // token name: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
+                        __token_name, _ := hex.DecodeString( _token_name[2 + 60 + 4 + 60 + 4:] )
+                        tx_token_name = string(bytes.Trim(__token_name, "\x00"))
+
+                        // token symbol: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
+                        __token_symbol, _ := hex.DecodeString( _token_symbol[2 + 60 + 4 + 60 + 4:] )
+                        tx_token_symbol = string(bytes.Trim(__token_symbol, "\x00"))
+
+                        // token decimals: 0x + [60 bytes] + [4 bytes]
+                        token_decimals_int := new(big.Int)
+                        token_decimals_int.SetString( _token_decimals[2:], 16 )
+                        __token_decimals := token_decimals_int.String()
+                        token_decimals_int32, _ := strconv.Atoi( __token_decimals )
+                        tx_token_decimals = __token_decimals
+
+                        // token total supply:
+                        token_total_supply_int := new(big.Int)
+                        token_total_supply_int.SetString( _token_total_supply[2:], 16 )
+                        token_total_supply_float := new(big.Float)
+                        token_total_supply_float.SetString( token_total_supply_int.String() )
+                        __token_total_supply := new(big.Float).Quo(token_total_supply_float, big.NewFloat(math.Pow10(token_decimals_int32)))
+                        tx_token_total_supply = fmt.Sprintf( "%.8f", __token_total_supply )
+
+                        //fmt.Println( "token name:", string(__token_name) )
+                        //fmt.Println( "token_symbol:", string(__token_symbol) )
+                        //fmt.Println( "token_decimals:", __token_decimals )
+                        //fmt.Printf( "token_total_supply: %f\n", __token_total_supply )
+                        //-----}
+
+
+                        // SEE:
+                        // - https://golang.org/pkg/math/big/
+                        // - https://golang.org/pkg/strconv/
+                        // - https://goethereumbook.org/account-balance/
+                        token_amount_wei_int := new(big.Int)
+                        token_amount_wei_int.SetString( tx_token_amount_wei_hex[2:], 16 )
+                        //fmt.Println( "erc-20 token amount hex-string to int: ", token_amount_wei_int, "(wei)" )
+                        token_amount_wei_float := new(big.Float)
+                        token_amount_wei_float.SetString( token_amount_wei_int.String() )
+                        token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(18)))
+                        tx_token_amount = fmt.Sprintf( "%.8f", token_amount )
+                        tx_token_amount_wei = token_amount_wei_int.String()
+                        //fmt.Printf( "erc-20 token amount: %s (%s)\n", tx_token_amount, tx_token_symbol )
+                    }
+
+
+                    fmt.Println( "hash =", tx_hash )
+                    fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                    fmt.Println( "block_number =", tx_block_number )
+                    fmt.Println( "from =", tx_from )
+
+                    fmt.Println( "token_contract address =", tx_to )
+                    fmt.Println( "token_to =", tx_token_to )
+                    fmt.Println( "token_name =", tx_token_name )
+                    fmt.Println( "token_symbol =", tx_token_symbol )
+                    fmt.Println( "token_decimals =", tx_token_decimals )
+                    fmt.Println( "token_total_supply =", tx_token_total_supply )
+                    fmt.Println( "token_value_wei =", tx_token_amount_wei, "(wei)" )
+                    fmt.Println( "token_value_" + tx_token_symbol + " =", tx_token_amount, "(" + tx_token_symbol + ")" )
+                    fmt.Println()
                 }
-
-
-                fmt.Println( "hash =", tx_hash )
-                fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-                fmt.Println( "block_number =", tx_block_number )
-                fmt.Println( "from =", tx_from )
-
-                fmt.Println( "token_contract address =", tx_to )
-                fmt.Println( "token_to =", tx_token_to )
-                fmt.Println( "token_name =", tx_token_name )
-                fmt.Println( "token_symbol =", tx_token_symbol )
-                fmt.Println( "token_decimals =", tx_token_decimals )
-                fmt.Println( "token_total_supply =", tx_token_total_supply )
-                fmt.Println( "token_value_wei =", tx_token_amount_wei, "(wei)" )
-                fmt.Println( "token_value_" + tx_token_symbol + " =", tx_token_amount, "(" + tx_token_symbol + ")" )
-                fmt.Println()
-            }
-
-
-        } // for ()
+            } // for (), transactions
+        } // for (), blocks
     }
 }
 
@@ -1846,157 +1850,163 @@ func get_blocks_erc1155() {
 
             //fmt.Println( "data =", result_block.Result )
             //fmt.Println( reflect.TypeOf(result_block.Result) )
-            _txn := result_block.Result.(map[string]interface{})["transactions"]
-            //fmt.Println( "size = ", len(_txn.([]interface{})) )
-            if len(_txn.([]interface{})) <= 0 {
+            _txns := result_block.Result.(map[string]interface{})["transactions"]
+            fmt.Println( "transaction size = ", len(_txns.([]interface{})) )
+            if len(_txns.([]interface{})) <= 0 {
                 //fmt.Println( "no transaction: size = 0" )
                 continue
             }
-            _txn = _txn.([]interface{})[0]
-            txn := _txn.(map[string]interface{})
-            //if txn["from"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" && txn["to"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" {
-            if txn["from"] != "0xe6e55eed00218faef27eed24def9208f3878b333" && txn["to"] != "0x1249CDA86774Bc170CAb843437DD37484F173ca8" {
-                continue
-            }
 
-            timestamp_hex := result_block.Result.(map[string]interface{})["timestamp"]
-            timestamp_int := new(big.Int)
-            timestamp_int.SetString( timestamp_hex.(string)[2:], 16 )
-            timestamp_unixtime := timestamp_int.String()
-            //timestamp_int32, _ := strconv.Atoi( timestamp_unixtime )
-            timestamp_int64, _ := strconv.ParseInt( timestamp_unixtime, 10, 64 )
-            tx_timestamp_date := time.Unix( timestamp_int64, 0 )
-            //tx_timestamp_date_rfc3339 := timestamp_date.Format( time.RFC3339 )
+            for j := 0; j < len(_txns.([]interface{})); j++ {
+                //_txns = _txns.([]interface{})[0]
+                //txn := _txns.(map[string]interface{})
+                _txn := _txns.([]interface{})[j]
+                txn := _txn.(map[string]interface{})
 
-
-            tx_hash := txn["hash"]
-            tx_block_number_hex := txn["blockNumber"]
-            tx_block_number := ""
-            {
-                block_number_int := new(big.Int)
-                block_number_int.SetString( tx_block_number_hex.(string)[2:], 16 )
-                //fmt.Println( "ether hex-string to int: ", block_number_int )
-                tx_block_number = block_number_int.String()
-            }
-            tx_from := txn["from"]
-            tx_to := txn["to"]
-            tx_value_wei_hex := txn["value"]
-            tx_value_wei := ""
-            tx_value := "" // Ether
-            tx_input := txn["input"]
-
-            tx_token_from := "" // for ERC-1155
-            tx_token_to := "" // for ERC-1155
-            tx_token_amount_hex := ""
-            tx_token_amount := ""
-            tx_token_id_hex := ""
-            //tx_token_id := ""
-            tx_token_data := ""
-            tx_token_data_length := ""
-
-            if tx_to == nil {
-                continue
-            }
-
-            //fmt.Println( "transaction =", _txn )
-            //fmt.Println( "hash =", tx_hash )
-            //fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-            //fmt.Println( "block_number =", tx_block_number )
-            //fmt.Println( "from =", tx_from )
-
-            if txn["input"] == "0x" {
-                fmt.Println( "Ether" )
-
-                fmt.Println( "hash =", tx_hash )
-                fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-                fmt.Println( "block_number =", tx_block_number )
-                fmt.Println( "from =", tx_from )
-                fmt.Println( "to =", tx_to )
-
-                // SEE:
-                // - https://golang.org/pkg/math/big/
-                // - https://golang.org/pkg/strconv/
-                // - https://goethereumbook.org/account-balance/
-                amount_wei_int := new(big.Int)
-                amount_wei_int.SetString( tx_value_wei_hex.(string)[2:], 16 )
-                fmt.Println( "ether hex-string to int: ", amount_wei_int, "(wei)" )
-                amount_wei_float := new(big.Float)
-                amount_wei_float.SetString( amount_wei_int.String() )
-                tx_value_float := new(big.Float).Quo(amount_wei_float, big.NewFloat(math.Pow10(18)))
-                tx_value = fmt.Sprintf( "%.8f", tx_value_float )
-                tx_value_wei = amount_wei_int.String()
-
-                fmt.Println( "value_wei =", tx_value_wei, "(wei)" )
-                fmt.Println( "value_ether =", tx_value, "(ether)" )
-                fmt.Println()
-            } else {
-                //fmt.Println( "ERC-1155" )
-
-                fmt.Println( "input data =", tx_input )
-
-                //fmt.Println( "method =", tx_input.(string)[:10] )
-                //if tx_input.(string)[:10] != "0xa9059cbb" {
-                //    fmt.Println( "Not ERC-20 transfer transaction" )
-                //    continue
-                //}
-
-
-                fmt.Println( "method =", tx_input.(string)[:10] )
-                if tx_input.(string)[:10] != "0xf242432a" {
-                    fmt.Println( "Not ERC-1155 safeTransferFrom transaction" )
+                //if txn["from"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" && txn["to"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" {
+                if txn["from"] != "0xe6e55eed00218faef27eed24def9208f3878b333" && txn["to"] != "0x1249CDA86774Bc170CAb843437DD37484F173ca8" {
                     continue
                 }
 
-
-                //tx_data_offset := 0
-
-                //tx_data_offset = 2 + 8 + 24
-                // token from: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
-                tx_token_from = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
-
-                //tx_data_offset = 2 + 8 + 24+40 + 24
-                // token to: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
-                tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 64)]
-
-                //tx_data_offset = 2 + 8 + 64 + 64
-                // token id: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64]
-                tx_token_id_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64:(2+8+64+64 + 64)]
-
-                //tx_data_offset = 2 + 8 + 64 + 64 + 64
-                // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64]
-                tx_token_amount_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64:(2+8+64+64+64 + 64)]
-
-                //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64
-                // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64]
-                tx_token_data_length = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64:(2+8+64+64+64+64 + 64)]
-
-                //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64 + 64
-                // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64] + [64]
-                tx_token_data = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64 + 64:(2+8+64+64+64+64+64 + 64)]
+                timestamp_hex := result_block.Result.(map[string]interface{})["timestamp"]
+                timestamp_int := new(big.Int)
+                timestamp_int.SetString( timestamp_hex.(string)[2:], 16 )
+                timestamp_unixtime := timestamp_int.String()
+                //timestamp_int32, _ := strconv.Atoi( timestamp_unixtime )
+                timestamp_int64, _ := strconv.ParseInt( timestamp_unixtime, 10, 64 )
+                tx_timestamp_date := time.Unix( timestamp_int64, 0 )
+                //tx_timestamp_date_rfc3339 := timestamp_date.Format( time.RFC3339 )
 
 
+                tx_hash := txn["hash"]
+                tx_block_number_hex := txn["blockNumber"]
+                tx_block_number := ""
                 {
-                    token_amount_int := new(big.Int)
-                    token_amount_int.SetString( tx_token_amount_hex[2:], 16 )
-                    tx_token_amount = token_amount_int.String()
+                    block_number_int := new(big.Int)
+                    block_number_int.SetString( tx_block_number_hex.(string)[2:], 16 )
+                    //fmt.Println( "ether hex-string to int: ", block_number_int )
+                    tx_block_number = block_number_int.String()
+                }
+                tx_from := txn["from"]
+                tx_to := txn["to"]
+                tx_value_wei_hex := txn["value"]
+                tx_value_wei := ""
+                tx_value := "" // Ether
+                tx_input := txn["input"]
+
+                tx_token_from := "" // for ERC-1155
+                tx_token_to := "" // for ERC-1155
+                tx_token_amount_hex := ""
+                tx_token_amount := ""
+                tx_token_id_hex := ""
+                //tx_token_id := ""
+                tx_token_data := ""
+                tx_token_data_length := ""
+
+                if tx_to == nil {
+                    continue
                 }
 
+                //fmt.Println( "transaction =", _txn )
+                //fmt.Println( "hash =", tx_hash )
+                //fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                //fmt.Println( "block_number =", tx_block_number )
+                //fmt.Println( "from =", tx_from )
 
-                fmt.Println( "hash =", tx_hash )
-                fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-                fmt.Println( "block_number =", tx_block_number )
-                fmt.Println( "from =", tx_from )
+                if txn["input"] == "0x" {
+                    fmt.Println( "Ether" )
 
-                fmt.Println( "token_contract address =", tx_to )
-                fmt.Println( "token_from =", tx_token_from )
-                fmt.Println( "token_to =", tx_token_to )
-                fmt.Println( "token_id = ", tx_token_id_hex )
-                fmt.Println( "token_amount = ", tx_token_amount )
-                fmt.Println( "token_data_length = ", tx_token_data_length )
-                fmt.Println( "token_data = ", tx_token_data )
-                fmt.Println()
-            }
-        } // for ()
+                    fmt.Println( "hash =", tx_hash )
+                    fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                    fmt.Println( "block_number =", tx_block_number )
+                    fmt.Println( "from =", tx_from )
+                    fmt.Println( "to =", tx_to )
+
+                    // SEE:
+                    // - https://golang.org/pkg/math/big/
+                    // - https://golang.org/pkg/strconv/
+                    // - https://goethereumbook.org/account-balance/
+                    amount_wei_int := new(big.Int)
+                    amount_wei_int.SetString( tx_value_wei_hex.(string)[2:], 16 )
+                    fmt.Println( "ether hex-string to int: ", amount_wei_int, "(wei)" )
+                    amount_wei_float := new(big.Float)
+                    amount_wei_float.SetString( amount_wei_int.String() )
+                    tx_value_float := new(big.Float).Quo(amount_wei_float, big.NewFloat(math.Pow10(18)))
+                    tx_value = fmt.Sprintf( "%.8f", tx_value_float )
+                    tx_value_wei = amount_wei_int.String()
+
+                    fmt.Println( "value_wei =", tx_value_wei, "(wei)" )
+                    fmt.Println( "value_ether =", tx_value, "(ether)" )
+                    fmt.Println()
+                } else {
+                    //fmt.Println( "ERC-1155" )
+
+                    fmt.Println( "input data =", tx_input )
+
+                    //fmt.Println( "method =", tx_input.(string)[:10] )
+                    //if tx_input.(string)[:10] != "0xa9059cbb" {
+                    //    fmt.Println( "Not ERC-20 transfer transaction" )
+                    //    continue
+                    //}
+
+
+                    fmt.Println( "method =", tx_input.(string)[:10] )
+                    if tx_input.(string)[:10] != "0xf242432a" {
+                        fmt.Println( "Not ERC-1155 safeTransferFrom transaction" )
+                        continue
+                    }
+
+
+                    //tx_data_offset := 0
+
+                    //tx_data_offset = 2 + 8 + 24
+                    // token from: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
+                    tx_token_from = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
+
+                    //tx_data_offset = 2 + 8 + 24+40 + 24
+                    // token to: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
+                    tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 64)]
+
+                    //tx_data_offset = 2 + 8 + 64 + 64
+                    // token id: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64]
+                    tx_token_id_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64:(2+8+64+64 + 64)]
+
+                    //tx_data_offset = 2 + 8 + 64 + 64 + 64
+                    // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64]
+                    tx_token_amount_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64:(2+8+64+64+64 + 64)]
+
+                    //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64
+                    // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64]
+                    tx_token_data_length = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64:(2+8+64+64+64+64 + 64)]
+
+                    //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64 + 64
+                    // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64] + [64]
+                    tx_token_data = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64 + 64:(2+8+64+64+64+64+64 + 64)]
+
+
+                    {
+                        token_amount_int := new(big.Int)
+                        token_amount_int.SetString( tx_token_amount_hex[2:], 16 )
+                        tx_token_amount = token_amount_int.String()
+                    }
+
+
+                    fmt.Println( "hash =", tx_hash )
+                    fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                    fmt.Println( "block_number =", tx_block_number )
+                    fmt.Println( "from =", tx_from )
+
+                    fmt.Println( "token_contract address =", tx_to )
+                    fmt.Println( "token_from =", tx_token_from )
+                    fmt.Println( "token_to =", tx_token_to )
+                    fmt.Println( "token_id = ", tx_token_id_hex )
+                    fmt.Println( "token_amount = ", tx_token_amount )
+                    fmt.Println( "token_data_length = ", tx_token_data_length )
+                    fmt.Println( "token_data = ", tx_token_data )
+                    fmt.Println()
+                }
+            } // for (), transactions
+        } // for (), blocks
     }
 }
 
@@ -2116,510 +2126,515 @@ func get_blocks_all() {
 
             //fmt.Println( "data =", result_block.Result )
             //fmt.Println( reflect.TypeOf(result_block.Result) )
-            _txn := result_block.Result.(map[string]interface{})["transactions"]
-            //fmt.Println( "size = ", len(_txn.([]interface{})) )
-            if len(_txn.([]interface{})) <= 0 {
+            _txns := result_block.Result.(map[string]interface{})["transactions"]
+            fmt.Println( "transaction size = ", len(_txns.([]interface{})) )
+            if len(_txns.([]interface{})) <= 0 {
                 //fmt.Println( "no transaction: size = 0" )
                 continue
             }
-            _txn = _txn.([]interface{})[0]
-            txn := _txn.(map[string]interface{})
-            //if txn["from"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" && txn["to"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" {
-            //if txn["from"] != "0xe6e55eed00218faef27eed24def9208f3878b333" && txn["to"] != "0x1249CDA86774Bc170CAb843437DD37484F173ca8" {
-            //    continue
-            //}
 
-            timestamp_hex := result_block.Result.(map[string]interface{})["timestamp"]
-            timestamp_int := new(big.Int)
-            timestamp_int.SetString( timestamp_hex.(string)[2:], 16 )
-            timestamp_unixtime := timestamp_int.String()
-            //timestamp_int32, _ := strconv.Atoi( timestamp_unixtime )
-            timestamp_int64, _ := strconv.ParseInt( timestamp_unixtime, 10, 64 )
-            tx_timestamp_date := time.Unix( timestamp_int64, 0 )
-            //tx_timestamp_date_rfc3339 := timestamp_date.Format( time.RFC3339 )
+            for j := 0; j < len(_txns.([]interface{})); j++ {
+                //_txns = _txns.([]interface{})[0]
+                //txn := _txns.(map[string]interface{})
+                _txn := _txns.([]interface{})[j]
+                txn := _txn.(map[string]interface{})
 
+                //if txn["from"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" && txn["to"] != "0x8f5b2b7608e3e3a3dc0426c3396420fbf1849454" {
+                //if txn["from"] != "0xe6e55eed00218faef27eed24def9208f3878b333" && txn["to"] != "0x1249CDA86774Bc170CAb843437DD37484F173ca8" {
+                //    continue
+                //}
 
-            tx_hash := txn["hash"]
-            tx_block_number_hex := txn["blockNumber"]
-            tx_block_number := ""
-            {
-                block_number_int := new(big.Int)
-                block_number_int.SetString( tx_block_number_hex.(string)[2:], 16 )
-                //fmt.Println( "ether hex-string to int: ", block_number_int )
-                tx_block_number = block_number_int.String()
-            }
-            tx_from := txn["from"]
-            tx_to := txn["to"]
-            tx_value_wei_hex := txn["value"]
-            tx_value_wei := ""
-            tx_value := "" // Ether
-            tx_input := txn["input"]
-
-            tx_token_from := "" // for ERC-1155
-            tx_token_to := "" // for ERC-20, ERC-1155
-
-            // for ERC-20
-            tx_token_name := ""
-            tx_token_symbol := ""
-            tx_token_decimals := ""
-            tx_token_total_supply := ""
-            tx_token_amount_wei_hex := ""
-            tx_token_amount_wei := ""
-
-            tx_token_amount := ""
-
-            // for ERC-1155
-            tx_token_amount_hex := ""
-            //tx_token_amount := ""
-            tx_token_id_hex := ""
-            //tx_token_id := ""
-            tx_token_data := ""
-            tx_token_data_length := ""
-            tx_token_uri_with_token_id := ""
-            tx_token_uri_with_token_id_hexadecimal := ""
-
-            if tx_to == nil {
-                continue
-            }
-
-            //fmt.Println( "transaction =", _txn )
-            //fmt.Println( "hash =", tx_hash )
-            //fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-            //fmt.Println( "block_number =", tx_block_number )
-            //fmt.Println( "from =", tx_from )
-
-            if txn["input"] == "0x" {
-                fmt.Println( "Ether" )
-
-                fmt.Println( "hash =", tx_hash )
-                fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-                fmt.Println( "block_number =", tx_block_number )
-                fmt.Println( "from =", tx_from )
-                fmt.Println( "to =", tx_to )
-
-                // SEE:
-                // - https://golang.org/pkg/math/big/
-                // - https://golang.org/pkg/strconv/
-                // - https://goethereumbook.org/account-balance/
-                amount_wei_int := new(big.Int)
-                amount_wei_int.SetString( tx_value_wei_hex.(string)[2:], 16 )
-                fmt.Println( "ether hex-string to int: ", amount_wei_int, "(wei)" )
-                amount_wei_float := new(big.Float)
-                amount_wei_float.SetString( amount_wei_int.String() )
-                tx_value_float := new(big.Float).Quo(amount_wei_float, big.NewFloat(math.Pow10(18)))
-                tx_value = fmt.Sprintf( "%.8f", tx_value_float )
-                tx_value_wei = amount_wei_int.String()
-
-                fmt.Println( "value_wei =", tx_value_wei, "(wei)" )
-                fmt.Println( "value_ether =", tx_value, "(ether)" )
-                fmt.Println()
-            } else {
-                //fmt.Println( "ERC-xxxx" )
-
-                token_type := ""
-                //tx_data_offset := 0
+                timestamp_hex := result_block.Result.(map[string]interface{})["timestamp"]
+                timestamp_int := new(big.Int)
+                timestamp_int.SetString( timestamp_hex.(string)[2:], 16 )
+                timestamp_unixtime := timestamp_int.String()
+                //timestamp_int32, _ := strconv.Atoi( timestamp_unixtime )
+                timestamp_int64, _ := strconv.ParseInt( timestamp_unixtime, 10, 64 )
+                tx_timestamp_date := time.Unix( timestamp_int64, 0 )
+                //tx_timestamp_date_rfc3339 := timestamp_date.Format( time.RFC3339 )
 
 
-                //fmt.Println( "method =", tx_input.(string)[:10] )
+                tx_hash := txn["hash"]
+                tx_block_number_hex := txn["blockNumber"]
+                tx_block_number := ""
+                {
+                    block_number_int := new(big.Int)
+                    block_number_int.SetString( tx_block_number_hex.(string)[2:], 16 )
+                    //fmt.Println( "ether hex-string to int: ", block_number_int )
+                    tx_block_number = block_number_int.String()
+                }
+                tx_from := txn["from"]
+                tx_to := txn["to"]
+                tx_value_wei_hex := txn["value"]
+                tx_value_wei := ""
+                tx_value := "" // Ether
+                tx_input := txn["input"]
 
-                if tx_input.(string)[:10] == "0xa9059cbb" {
-                    // ERC-20
-                    fmt.Println( "ERC-20 transfer() transaction" )
-                    token_type = "erc20"
-                } else if tx_input.(string)[:10] == "0xf242432a" {
-                    // ERC-1155
-                    fmt.Println( "ERC-1155 safeTransferFrom() transaction" )
-                    token_type = "erc1155"
-                } else {
-                    //fmt.Println( "ERC-xxxx transfer transaction: No such transaction method" )
-                    //fmt.Println()
+                tx_token_from := "" // for ERC-1155
+                tx_token_to := "" // for ERC-20, ERC-1155
+
+                // for ERC-20
+                tx_token_name := ""
+                tx_token_symbol := ""
+                tx_token_decimals := ""
+                tx_token_total_supply := ""
+                tx_token_amount_wei_hex := ""
+                tx_token_amount_wei := ""
+
+                tx_token_amount := ""
+
+                // for ERC-1155
+                tx_token_amount_hex := ""
+                //tx_token_amount := ""
+                tx_token_id_hex := ""
+                //tx_token_id := ""
+                tx_token_data := ""
+                tx_token_data_length := ""
+                tx_token_uri_with_token_id := ""
+                tx_token_uri_with_token_id_hexadecimal := ""
+
+                if tx_to == nil {
                     continue
                 }
 
+                //fmt.Println( "transaction =", _txn )
+                //fmt.Println( "hash =", tx_hash )
+                //fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                //fmt.Println( "block_number =", tx_block_number )
+                //fmt.Println( "from =", tx_from )
 
+                if txn["input"] == "0x" {
+                    fmt.Println( "Ether" )
 
-                fmt.Println( "input data =", tx_input )
-
-                if token_type == "erc1155" {
-                    //tx_data_offset = 2 + 8 + 24
-                    // token from: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
-                    tx_token_from = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
-
-                    //tx_data_offset = 2 + 8 + 24+40 + 24
-                    // token to: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
-                    tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 64)]
-
-                    //tx_data_offset = 2 + 8 + 64 + 64
-                    // token id: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64]
-                    tx_token_id_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64:(2+8+64+64 + 64)]
-
-                    //tx_data_offset = 2 + 8 + 64 + 64 + 64
-                    // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64]
-                    tx_token_amount_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64:(2+8+64+64+64 + 64)]
-
-                    //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64
-                    // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64]
-                    tx_token_data_length = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64:(2+8+64+64+64+64 + 64)]
-
-                    //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64 + 64
-                    // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64] + [64]
-                    tx_token_data = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64 + 64:(2+8+64+64+64+64+64 + 64)]
-                }
-
-
-
-                method := ""
-                data := ""
-
-                if token_type == "erc20" {
-                    _token_name := ""
-                    _token_symbol := ""
-                    _token_decimals := ""
-                    _token_total_supply := ""
-
-
-                    // token to: [2: 0x] + [8: method] + [0 x 24]
-                    tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
-
-                    // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] + [40: to address]
-                    tx_token_amount_wei_hex = "0x" + tx_input.(string)[2 + 8 + 24 + 40:]
-
-
-                    {
-                        // Token: name
-                        method = "0x06fdde03"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_name = result.Result
-                    }
-
-                    {
-                        // Token: symbol
-                        method = "0x95d89b41"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_symbol = result.Result
-                    }
-
-                    {
-                        // Token: decimals
-                        method = "0x313ce567"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_decimals = result.Result
-                    }
-
-                    {
-                        // Token: total_supply 
-                        method = "0x18160ddd"
-                        data = method + "000000000000000000000000" + tx_from.(string)[2:]
-
-                        var params []interface{}
-                        request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
-                        _token_total_supply = result.Result
-                    }
-
-
-                    //-----{
-                    // token name: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
-                    __token_name, _ := hex.DecodeString( _token_name[2 + 60 + 4 + 60 + 4:] )
-                    tx_token_name = string(bytes.Trim(__token_name, "\x00"))
-
-                    // token symbol: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
-                    __token_symbol, _ := hex.DecodeString( _token_symbol[2 + 60 + 4 + 60 + 4:] )
-                    tx_token_symbol = string(bytes.Trim(__token_symbol, "\x00"))
-
-                    // token decimals: 0x + [60 bytes] + [4 bytes]
-                    token_decimals_int := new(big.Int)
-                    token_decimals_int.SetString( _token_decimals[2:], 16 )
-                    __token_decimals := token_decimals_int.String()
-                    token_decimals_int32, _ := strconv.Atoi( __token_decimals )
-                    tx_token_decimals = __token_decimals
-
-                    // token total supply:
-                    token_total_supply_int := new(big.Int)
-                    token_total_supply_int.SetString( _token_total_supply[2:], 16 )
-                    token_total_supply_float := new(big.Float)
-                    token_total_supply_float.SetString( token_total_supply_int.String() )
-                    __token_total_supply := new(big.Float).Quo(token_total_supply_float, big.NewFloat(math.Pow10(token_decimals_int32)))
-                    tx_token_total_supply = fmt.Sprintf( "%.8f", __token_total_supply )
-
-                    //fmt.Println( "token name:", string(__token_name) )
-                    //fmt.Println( "token_symbol:", string(__token_symbol) )
-                    //fmt.Println( "token_decimals:", __token_decimals )
-                    //fmt.Printf( "token_total_supply: %f\n", __token_total_supply )
-                    //-----}
-
+                    fmt.Println( "hash =", tx_hash )
+                    fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                    fmt.Println( "block_number =", tx_block_number )
+                    fmt.Println( "from =", tx_from )
+                    fmt.Println( "to =", tx_to )
 
                     // SEE:
                     // - https://golang.org/pkg/math/big/
                     // - https://golang.org/pkg/strconv/
                     // - https://goethereumbook.org/account-balance/
-                    token_amount_wei_int := new(big.Int)
-                    token_amount_wei_int.SetString( tx_token_amount_wei_hex[2:], 16 )
-                    //fmt.Println( "erc-20 token amount hex-string to int: ", token_amount_wei_int, "(wei)" )
-                    token_amount_wei_float := new(big.Float)
-                    token_amount_wei_float.SetString( token_amount_wei_int.String() )
-                    token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(18)))
-                    tx_token_amount = fmt.Sprintf( "%.8f", token_amount )
-                    tx_token_amount_wei = token_amount_wei_int.String()
-                    //fmt.Printf( "erc-20 token amount: %s (%s)\n", tx_token_amount, tx_token_symbol )
-                } else if token_type == "erc1155" {
-                    token_amount_int := new(big.Int)
-                    token_amount_int.SetString( tx_token_amount_hex[2:], 16 )
-                    tx_token_amount = token_amount_int.String()
+                    amount_wei_int := new(big.Int)
+                    amount_wei_int.SetString( tx_value_wei_hex.(string)[2:], 16 )
+                    fmt.Println( "ether hex-string to int: ", amount_wei_int, "(wei)" )
+                    amount_wei_float := new(big.Float)
+                    amount_wei_float.SetString( amount_wei_int.String() )
+                    tx_value_float := new(big.Float).Quo(amount_wei_float, big.NewFloat(math.Pow10(18)))
+                    tx_value = fmt.Sprintf( "%.8f", tx_value_float )
+                    tx_value_wei = amount_wei_int.String()
 
-                    token_id_int := new(big.Int)
-                    token_id_int.SetString( tx_token_id_hex[2:], 16 )
-                    tx_token_id := token_id_int.String()
+                    fmt.Println( "value_wei =", tx_value_wei, "(wei)" )
+                    fmt.Println( "value_ether =", tx_value, "(ether)" )
+                    fmt.Println()
+                } else {
+                    //fmt.Println( "ERC-xxxx" )
 
-                    // get URI
-                    {
-                        var result types.Result
-
-                        //gas := "70000"
-                        //gasprice := "100"
-                        //value := ""
-                        //from := ""
-                        to := tx_to // erc-1155 contract address
-                        holder_address := tx_token_to // has been transferred already
-                        token_id := tx_token_id
-                        //to := "0x1e57f9561600b269a37437f02ce9da31e5b830ce" // erc-1155 contract address
-                        //holder_address := "0xe6e55eed00218faef27eed24def9208f3878b333"
-                        method := "0x0e89341c"
-                        token_id_int := new(big.Int)
-                        token_id_int.SetString( token_id, 10 )
-                        token_id_hex := "0x" + token_id_int.Text( 16 )
-                        data := method + "000000000000000000000000" + holder_address[2:] +
-                                strings.Repeat("0", 64 - len(token_id_hex[2:])) + token_id_hex[2:]
-
-                        var params []interface{}
-                        //request_data_param := types.RequestData_params_erc1155_transaction { From: from, To: to, Value: value, Gas: gas, Gasprice: gasprice, Data: data }
-                        request_data_param := types.RequestData_params_erc1155 { To: to.(string), Data: data }
-                        params = append( params, request_data_param, "latest" )
-                        request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
-
-                        message, _ := json.Marshal( request_data )
-                        //fmt.Println( "message: ", request_data )
-                        response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
-                        defer response.Body.Close()
-                        if err != nil {
-                            log.Fatal( "http.Post: ", err )
-                        }
-
-                        //fmt.Println( "response: " )
-                        responseBody, err := ioutil.ReadAll( response.Body )
-                        if err != nil {
-                            log.Fatal( "ioutil.ReadAll: ", err )
-                        }
-
-                        //fmt.Println( string(responseBody) )
-                        err = json.Unmarshal( responseBody, &result )
-                        if err != nil {
-                            log.Fatal( "json.Unmarshal: ", err )
-                        }
-                        //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                    token_type := ""
+                    //tx_data_offset := 0
 
 
-                        uri_hex_str := result.Result
+                    //fmt.Println( "method =", tx_input.(string)[:10] )
 
-                        // 2+126+2+6: 2 bytes (0x) + 126 bytes (0000...20...000000) + 2 byte (3d) + 6 bytes (000000)
-                        checks_len := 2 + 126 + 2 + 6
-
-                        //fmt.Println( "checks len: ", checks_len )
-
-                        if len(uri_hex_str) <= checks_len {
-                            log.Fatal( "invalid length: ", len(uri_hex_str) )
-                        }
-
-                        //fmt.Println( "uri hex str: ", uri_hex_str )
-                        //fmt.Println( "url hex str len: ", len(uri_hex_str) )
-
-                        uri_hex := uri_hex_str[2+126+2:len(uri_hex_str) - 6]
-                        //fmt.Println( "URI hex: ", uri_hex )
-
-                        uri_bs, err := hex.DecodeString( uri_hex )
-                        uri_str := string( uri_bs )
-
-                        //fmt.Println( hex.Dump(uri_bs) )
-
-                        if err != nil {
-                            panic(err)
-                        }
-                        //fmt.Println( "erc-1155 URI hex-string to str: ", uri_str )
-
-                        uri_with_token_id := strings.Replace( uri_str, "{id}", token_id, -1 )
-                        //fmt.Println( "erc-1155 URI: ", uri_with_token_id )
-
-
-                        // https://docs.openzeppelin.com/contracts/3.x/erc1155#constructing_an_erc1155_token_contract
-                        // The uri can include the string {id} which clients must replace with the actual token ID,
-                        // in lowercase hexadecimal (with no 0x prefix) and leading zero padded to 64 hex characters.
-
-                        //token_id_bytes := []byte( token_id ) // from str
-                        //token_id_hex = hex.EncodeToString( token_id_bytes )
-                        //
-                        //token_id_hex = hex.EncodeToString( []byte(token_id) ) // from str
-
-                        //token_id_bytes := []byte( strconv.FormatInt(token_id_int, 16) ) // from int
-                        token_id_bytes := []byte( fmt.Sprintf("%x", token_id_int) ) // from int
-                        token_id_hex = hex.EncodeToString( token_id_bytes )
-
-                        //fmt.Println( "token_id str: ", token_id )
-                        //fmt.Println( "token_id hex (from str literally): ", token_id_hex )
-
-                        token_id_bs, err := hex.DecodeString( token_id_hex )
-                        token_id_str := string( token_id_bs )
-                        if err != nil {
-                            panic(err)
-                        }
-                        //fmt.Println( "token_id ASCII: ", token_id_str )
-                        //tx_token_uri_with_token_id = token_id_str
-
-
-                        uri_with_token_id = strings.Repeat("0", 64 - len(token_id_hex)) + token_id_hex // from str literally
-                        //uri_with_token_id = strings.Repeat("0", 64 - len(token_id_str)) + token_id_str // ASCII
-                        uri_with_token_id = strings.Replace( uri_str, "{id}", uri_with_token_id, -1 )
-                        //fmt.Println( "erc-1155 URI: ", uri_with_token_id )
-
-                        // Hexadecimal
-                        tx_token_uri_with_token_id_hexadecimal = uri_with_token_id
-
-                        // ASCII
-                        tx_token_uri_with_token_id = strings.Replace( uri_str, "{id}", token_id_str, -1 )
+                    if tx_input.(string)[:10] == "0xa9059cbb" {
+                        // ERC-20
+                        fmt.Println( "ERC-20 transfer() transaction" )
+                        token_type = "erc20"
+                    } else if tx_input.(string)[:10] == "0xf242432a" {
+                        // ERC-1155
+                        fmt.Println( "ERC-1155 safeTransferFrom() transaction" )
+                        token_type = "erc1155"
+                    } else {
+                        //fmt.Println( "ERC-xxxx transfer transaction: No such transaction method" )
+                        //fmt.Println()
+                        continue
                     }
-                }
 
 
 
-                //fmt.Println( "transaction =", _txn )
-                fmt.Println( "hash =", tx_hash )
-                fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
-                fmt.Println( "block_number =", tx_block_number )
-                fmt.Println( "from =", tx_from )
+                    fmt.Println( "input data =", tx_input )
 
-                if token_type == "erc20" {
-                    fmt.Println( "token_contract address =", tx_to )
-                    fmt.Println( "token_to =", tx_token_to )
-                    fmt.Println( "token_name =", tx_token_name )
-                    fmt.Println( "token_symbol =", tx_token_symbol )
-                    fmt.Println( "token_decimals =", tx_token_decimals )
-                    fmt.Println( "token_total_supply =", tx_token_total_supply )
-                    fmt.Println( "token_value_wei =", tx_token_amount_wei, "(wei)" )
-                    fmt.Println( "token_value_" + tx_token_symbol + " =", tx_token_amount, "(" + tx_token_symbol + ")" )
-                    fmt.Println()
-                } else if token_type == "erc1155" {
-                    fmt.Println( "token_contract address =", tx_to )
-                    fmt.Println( "token_from =", tx_token_from )
-                    fmt.Println( "token_to =", tx_token_to )
-                    fmt.Println( "token_id = ", tx_token_id_hex )
-                    fmt.Println( "token_amount = ", tx_token_amount )
-                    fmt.Println( "token_uri (ASCII) = ", tx_token_uri_with_token_id )
-                    fmt.Println( "token_uri (Hexadecimal) = ", tx_token_uri_with_token_id_hexadecimal )
-                    fmt.Println( "token_data_length = ", tx_token_data_length )
-                    fmt.Println( "token_data = ", tx_token_data )
-                    fmt.Println()
-                }
-            }
-        } // for ()
+                    if token_type == "erc1155" {
+                        //tx_data_offset = 2 + 8 + 24
+                        // token from: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
+                        tx_token_from = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
+
+                        //tx_data_offset = 2 + 8 + 24+40 + 24
+                        // token to: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] ~ [40]
+                        tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24+40 + 24:(2+8+24+40 + 64)]
+
+                        //tx_data_offset = 2 + 8 + 64 + 64
+                        // token id: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64]
+                        tx_token_id_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64:(2+8+64+64 + 64)]
+
+                        //tx_data_offset = 2 + 8 + 64 + 64 + 64
+                        // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64]
+                        tx_token_amount_hex = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64:(2+8+64+64+64 + 64)]
+
+                        //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64
+                        // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64]
+                        tx_token_data_length = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64:(2+8+64+64+64+64 + 64)]
+
+                        //tx_data_offset = 2 + 8 + 64 + 64 + 64 + 64 + 64
+                        // data length bytes: 32 bytes (64 chars): [2: 0x] + [8: method] + [64] + [64] + [64] + [64] + [64]
+                        tx_token_data = "0x" + tx_input.(string)[2 + 8 + 64 + 64 + 64 + 64 + 64:(2+8+64+64+64+64+64 + 64)]
+                    }
+
+
+
+                    method := ""
+                    data := ""
+
+                    if token_type == "erc20" {
+                        _token_name := ""
+                        _token_symbol := ""
+                        _token_decimals := ""
+                        _token_total_supply := ""
+
+
+                        // token to: [2: 0x] + [8: method] + [0 x 24]
+                        tx_token_to = "0x" + tx_input.(string)[2 + 8 + 24:(2+8+24 + 40)]
+
+                        // amount: 32 bytes (64 chars): [2: 0x] + [8: method] + [0 x 24] + [40: to address]
+                        tx_token_amount_wei_hex = "0x" + tx_input.(string)[2 + 8 + 24 + 40:]
+
+
+                        {
+                            // Token: name
+                            method = "0x06fdde03"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_name = result.Result
+                        }
+
+                        {
+                            // Token: symbol
+                            method = "0x95d89b41"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_symbol = result.Result
+                        }
+
+                        {
+                            // Token: decimals
+                            method = "0x313ce567"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_decimals = result.Result
+                        }
+
+                        {
+                            // Token: total_supply 
+                            method = "0x18160ddd"
+                            data = method + "000000000000000000000000" + tx_from.(string)[2:]
+
+                            var params []interface{}
+                            request_data_param := types.RequestData_params_erc20 { To: tx_to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+                            _token_total_supply = result.Result
+                        }
+
+
+                        //-----{
+                        // token name: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
+                        __token_name, _ := hex.DecodeString( _token_name[2 + 60 + 4 + 60 + 4:] )
+                        tx_token_name = string(bytes.Trim(__token_name, "\x00"))
+
+                        // token symbol: 0x + [60 bytes] + [4 bytes] + [60 bytes] + [4 bytes]:
+                        __token_symbol, _ := hex.DecodeString( _token_symbol[2 + 60 + 4 + 60 + 4:] )
+                        tx_token_symbol = string(bytes.Trim(__token_symbol, "\x00"))
+
+                        // token decimals: 0x + [60 bytes] + [4 bytes]
+                        token_decimals_int := new(big.Int)
+                        token_decimals_int.SetString( _token_decimals[2:], 16 )
+                        __token_decimals := token_decimals_int.String()
+                        token_decimals_int32, _ := strconv.Atoi( __token_decimals )
+                        tx_token_decimals = __token_decimals
+
+                        // token total supply:
+                        token_total_supply_int := new(big.Int)
+                        token_total_supply_int.SetString( _token_total_supply[2:], 16 )
+                        token_total_supply_float := new(big.Float)
+                        token_total_supply_float.SetString( token_total_supply_int.String() )
+                        __token_total_supply := new(big.Float).Quo(token_total_supply_float, big.NewFloat(math.Pow10(token_decimals_int32)))
+                        tx_token_total_supply = fmt.Sprintf( "%.8f", __token_total_supply )
+
+                        //fmt.Println( "token name:", string(__token_name) )
+                        //fmt.Println( "token_symbol:", string(__token_symbol) )
+                        //fmt.Println( "token_decimals:", __token_decimals )
+                        //fmt.Printf( "token_total_supply: %f\n", __token_total_supply )
+                        //-----}
+
+
+                        // SEE:
+                        // - https://golang.org/pkg/math/big/
+                        // - https://golang.org/pkg/strconv/
+                        // - https://goethereumbook.org/account-balance/
+                        token_amount_wei_int := new(big.Int)
+                        token_amount_wei_int.SetString( tx_token_amount_wei_hex[2:], 16 )
+                        //fmt.Println( "erc-20 token amount hex-string to int: ", token_amount_wei_int, "(wei)" )
+                        token_amount_wei_float := new(big.Float)
+                        token_amount_wei_float.SetString( token_amount_wei_int.String() )
+                        token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(18)))
+                        tx_token_amount = fmt.Sprintf( "%.8f", token_amount )
+                        tx_token_amount_wei = token_amount_wei_int.String()
+                        //fmt.Printf( "erc-20 token amount: %s (%s)\n", tx_token_amount, tx_token_symbol )
+                    } else if token_type == "erc1155" {
+                        token_amount_int := new(big.Int)
+                        token_amount_int.SetString( tx_token_amount_hex[2:], 16 )
+                        tx_token_amount = token_amount_int.String()
+
+                        token_id_int := new(big.Int)
+                        token_id_int.SetString( tx_token_id_hex[2:], 16 )
+                        tx_token_id := token_id_int.String()
+
+                        // get URI
+                        {
+                            var result types.Result
+
+                            //gas := "70000"
+                            //gasprice := "100"
+                            //value := ""
+                            //from := ""
+                            to := tx_to // erc-1155 contract address
+                            holder_address := tx_token_to // has been transferred already
+                            token_id := tx_token_id
+                            //to := "0x1e57f9561600b269a37437f02ce9da31e5b830ce" // erc-1155 contract address
+                            //holder_address := "0xe6e55eed00218faef27eed24def9208f3878b333"
+                            method := "0x0e89341c"
+                            token_id_int := new(big.Int)
+                            token_id_int.SetString( token_id, 10 )
+                            token_id_hex := "0x" + token_id_int.Text( 16 )
+                            data := method + "000000000000000000000000" + holder_address[2:] +
+                                    strings.Repeat("0", 64 - len(token_id_hex[2:])) + token_id_hex[2:]
+
+                            var params []interface{}
+                            //request_data_param := types.RequestData_params_erc1155_transaction { From: from, To: to, Value: value, Gas: gas, Gasprice: gasprice, Data: data }
+                            request_data_param := types.RequestData_params_erc1155 { To: to.(string), Data: data }
+                            params = append( params, request_data_param, "latest" )
+                            request_data := types.RequestData { Jsonrpc: "2.0", Method: "eth_call", Params: params, Id: 0 }
+
+                            message, _ := json.Marshal( request_data )
+                            //fmt.Println( "message: ", request_data )
+                            response, err := http.Post( URL, "application/json", bytes.NewBuffer(message) )
+                            defer response.Body.Close()
+                            if err != nil {
+                                log.Fatal( "http.Post: ", err )
+                            }
+
+                            //fmt.Println( "response: " )
+                            responseBody, err := ioutil.ReadAll( response.Body )
+                            if err != nil {
+                                log.Fatal( "ioutil.ReadAll: ", err )
+                            }
+
+                            //fmt.Println( string(responseBody) )
+                            err = json.Unmarshal( responseBody, &result )
+                            if err != nil {
+                                log.Fatal( "json.Unmarshal: ", err )
+                            }
+                            //fmt.Println( "jsonrpc =" , result.Jsonrpc, ", id =", result.Id, ", result =", result.Result )
+
+
+                            uri_hex_str := result.Result
+
+                            // 2+126+2+6: 2 bytes (0x) + 126 bytes (0000...20...000000) + 2 byte (3d) + 6 bytes (000000)
+                            checks_len := 2 + 126 + 2 + 6
+
+                            //fmt.Println( "checks len: ", checks_len )
+
+                            if len(uri_hex_str) <= checks_len {
+                                log.Fatal( "invalid length: ", len(uri_hex_str) )
+                            }
+
+                            //fmt.Println( "uri hex str: ", uri_hex_str )
+                            //fmt.Println( "url hex str len: ", len(uri_hex_str) )
+
+                            uri_hex := uri_hex_str[2+126+2:len(uri_hex_str) - 6]
+                            //fmt.Println( "URI hex: ", uri_hex )
+
+                            uri_bs, err := hex.DecodeString( uri_hex )
+                            uri_str := string( uri_bs )
+
+                            //fmt.Println( hex.Dump(uri_bs) )
+
+                            if err != nil {
+                                panic(err)
+                            }
+                            //fmt.Println( "erc-1155 URI hex-string to str: ", uri_str )
+
+                            uri_with_token_id := strings.Replace( uri_str, "{id}", token_id, -1 )
+                            //fmt.Println( "erc-1155 URI: ", uri_with_token_id )
+
+
+                            // https://docs.openzeppelin.com/contracts/3.x/erc1155#constructing_an_erc1155_token_contract
+                            // The uri can include the string {id} which clients must replace with the actual token ID,
+                            // in lowercase hexadecimal (with no 0x prefix) and leading zero padded to 64 hex characters.
+
+                            //token_id_bytes := []byte( token_id ) // from str
+                            //token_id_hex = hex.EncodeToString( token_id_bytes )
+                            //
+                            //token_id_hex = hex.EncodeToString( []byte(token_id) ) // from str
+
+                            //token_id_bytes := []byte( strconv.FormatInt(token_id_int, 16) ) // from int
+                            token_id_bytes := []byte( fmt.Sprintf("%x", token_id_int) ) // from int
+                            token_id_hex = hex.EncodeToString( token_id_bytes )
+
+                            //fmt.Println( "token_id str: ", token_id )
+                            //fmt.Println( "token_id hex (from str literally): ", token_id_hex )
+
+                            token_id_bs, err := hex.DecodeString( token_id_hex )
+                            token_id_str := string( token_id_bs )
+                            if err != nil {
+                                panic(err)
+                            }
+                            //fmt.Println( "token_id ASCII: ", token_id_str )
+                            //tx_token_uri_with_token_id = token_id_str
+
+
+                            uri_with_token_id = strings.Repeat("0", 64 - len(token_id_hex)) + token_id_hex // from str literally
+                            //uri_with_token_id = strings.Repeat("0", 64 - len(token_id_str)) + token_id_str // ASCII
+                            uri_with_token_id = strings.Replace( uri_str, "{id}", uri_with_token_id, -1 )
+                            //fmt.Println( "erc-1155 URI: ", uri_with_token_id )
+
+                            // Hexadecimal
+                            tx_token_uri_with_token_id_hexadecimal = uri_with_token_id
+
+                            // ASCII
+                            tx_token_uri_with_token_id = strings.Replace( uri_str, "{id}", token_id_str, -1 )
+                        }
+                    }
+
+
+
+                    //fmt.Println( "transaction =", _txn )
+                    fmt.Println( "hash =", tx_hash )
+                    fmt.Println( "timestamp =", tx_timestamp_date ) // "Y/m/d/ H:i:s"
+                    fmt.Println( "block_number =", tx_block_number )
+                    fmt.Println( "from =", tx_from )
+
+                    if token_type == "erc20" {
+                        fmt.Println( "token_contract address =", tx_to )
+                        fmt.Println( "token_to =", tx_token_to )
+                        fmt.Println( "token_name =", tx_token_name )
+                        fmt.Println( "token_symbol =", tx_token_symbol )
+                        fmt.Println( "token_decimals =", tx_token_decimals )
+                        fmt.Println( "token_total_supply =", tx_token_total_supply )
+                        fmt.Println( "token_value_wei =", tx_token_amount_wei, "(wei)" )
+                        fmt.Println( "token_value_" + tx_token_symbol + " =", tx_token_amount, "(" + tx_token_symbol + ")" )
+                        fmt.Println()
+                    } else if token_type == "erc1155" {
+                        fmt.Println( "token_contract address =", tx_to )
+                        fmt.Println( "token_from =", tx_token_from )
+                        fmt.Println( "token_to =", tx_token_to )
+                        fmt.Println( "token_id = ", tx_token_id_hex )
+                        fmt.Println( "token_amount = ", tx_token_amount )
+                        fmt.Println( "token_uri (ASCII) = ", tx_token_uri_with_token_id )
+                        fmt.Println( "token_uri (Hexadecimal) = ", tx_token_uri_with_token_id_hexadecimal )
+                        fmt.Println( "token_data_length = ", tx_token_data_length )
+                        fmt.Println( "token_data = ", tx_token_data )
+                        fmt.Println()
+                    }
+                } // for (), transactions
+        } // for (), blocks
     }
 }
 
