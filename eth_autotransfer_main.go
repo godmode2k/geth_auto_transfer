@@ -5,7 +5,7 @@ Author:     Ho-Jung Kim (godmode2k@hotmail.com)
 Date:       Since Dec 4, 2020
 Filename:   eth_autotransfer_main.go
 
-Last modified:  Mar 26, 2022
+Last modified:  April 11, 2022
 License:
 
 *
@@ -1707,7 +1707,7 @@ func get_blocks() {
                         //fmt.Println( "erc-20 token amount hex-string to int: ", token_amount_wei_int, "(wei)" )
                         token_amount_wei_float := new(big.Float)
                         token_amount_wei_float.SetString( token_amount_wei_int.String() )
-                        token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(18)))
+                        token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(token_decimals_int32)))
                         tx_token_amount = fmt.Sprintf( "%.8f", token_amount )
                         tx_token_amount_wei = token_amount_wei_int.String()
                         //fmt.Printf( "erc-20 token amount: %s (%s)\n", tx_token_amount, tx_token_symbol )
@@ -2473,7 +2473,7 @@ func get_blocks_all() {
                         //fmt.Println( "erc-20 token amount hex-string to int: ", token_amount_wei_int, "(wei)" )
                         token_amount_wei_float := new(big.Float)
                         token_amount_wei_float.SetString( token_amount_wei_int.String() )
-                        token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(18)))
+                        token_amount := new(big.Float).Quo(token_amount_wei_float, big.NewFloat(math.Pow10(token_decimals_int32)))
                         tx_token_amount = fmt.Sprintf( "%.8f", token_amount )
                         tx_token_amount_wei = token_amount_wei_int.String()
                         //fmt.Printf( "erc-20 token amount: %s (%s)\n", tx_token_amount, tx_token_symbol )
@@ -2633,7 +2633,8 @@ func get_blocks_all() {
                         fmt.Println( "token_data = ", tx_token_data )
                         fmt.Println()
                     }
-                } // for (), transactions
+                }
+            } // for (), transactions
         } // for (), blocks
     }
 }
