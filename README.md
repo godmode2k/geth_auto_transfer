@@ -44,7 +44,7 @@ You can see also:
  - https://github.com/godmode2k/blockchain/tree/master/build_guide/ethereum
 
 3. Ethereum Block Explorer
-https://github.com/godmode2k/eth_block_explorer
+ - https://github.com/godmode2k/eth_block_explorer
 ```
 
 
