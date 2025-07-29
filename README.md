@@ -32,6 +32,19 @@ Ethereum
 $ git clone https://github.com/ethereum/go-ethereum.git -b v1.10.15
 $ cd go-ethereum-1.10.15 && make all
 $ cd .. && ln -s go-ethereum-1.10.15/build/bin/geth .
+
+
+You can see also:
+
+1. Setup an Ethereum Private Network Node
+ - https://github.com/godmode2k/blockchain/tree/master/build_guide
+
+2. Ethereum Smart-Contract (ERC-20, ERC-1155) Tools (Truffle, Hardhat, Foundry), Create & Deploy,
+   Dockerfile for Ethereum Private Network Node
+ - https://github.com/godmode2k/blockchain/tree/master/build_guide/ethereum
+
+3. Ethereum Block Explorer
+https://github.com/godmode2k/eth_block_explorer
 ```
 
 
